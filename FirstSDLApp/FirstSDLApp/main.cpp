@@ -10,6 +10,8 @@ using namespace std;
 //#include <SDL_mixer.h>
 //#include <SDL_audio.h>
 
+
+
 #include "postac.h"
 SDL_Surface * ekran = NULL;
 SDL_Surface * ludek = NULL;
@@ -43,12 +45,23 @@ bool CzyStrzelono = 1;
 bool CzyStrzelonoMyszka = 1;
 
 
-Uint32 start=0, startStrzaluMyszka=0;
+Uint32 start=0, startStrzaluMyszka=0, licznik=0;;
 
 double delta=0, delta1;
 double bulletdx, bulletdy;
 double deltaX,deltaY;
 double dlugosc;
+//lvl 1500 800
+const int SCREEN_WIDTH = 640; 
+const int SCREEN_HEIGHT = 480; 
+const int SCREEN_BPP = 32;
+const int LEVEL_WIDTH = 1230; 
+const int LEVEL_HEIGHT = 640;
+const int LUDZIK_WIDTH = 100; 
+const int LUDZIK_HEIGHT = 100;
+
+SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+SDL_Rect cameraPomoc = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
 SDL_Surface *load_image( std::string filename ) 
 { 
@@ -79,12 +92,14 @@ SDL_Surface *load_image( std::string filename )
 	}
 }
 
+
+
 	
 int main (int argc, char *argv[])
 {
 
 SDL_Init( SDL_INIT_EVERYTHING );
-    ekran = SDL_SetVideoMode( 800, 600, 32, SDL_SWSURFACE | SDL_DOUBLEBUF );
+    ekran = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE | SDL_DOUBLEBUF );
 	tlo = SDL_LoadBMP( "tlo.bmp" );
     przycisk = SDL_LoadBMP( "przycisk.bmp" );
     /*kursor = SDL_LoadBMP( "kursor.bmp" );
@@ -100,22 +115,29 @@ SDL_Init( SDL_INIT_EVERYTHING );
 	
 	przyciskDane.w = 50;
     przyciskDane.h = 50;
-	przyciskCel.x = 750;
+	przyciskCel.x = SCREEN_WIDTH-50;
     przyciskCel.y = 0;
     kursorDane.x = 0;
     kursorDane.y = 0;
-
+	
  while( !wyjscie )
     {
-       
+
 		
+		//SDL_Delay( ( 1000 / 60) - 10);
+		cameraPomoc.x=-2*camera.x;
+		cameraPomoc.y=-2*camera.y;
+		//SDL_BlitSurface(tlo, NULL, ekran, &camera );
+
 		SDL_FillRect( ekran, NULL, 0 );
-		SDL_BlitSurface( tlo, NULL, ekran, NULL );
+		//SDL_BlitSurface( tlo, NULL, ekran, NULL ); przed scrollem
+		SDL_BlitSurface(tlo, NULL , ekran, &cameraPomoc);
         SDL_ShowCursor( SDL_DISABLE );
         SDL_BlitSurface( przycisk, & przyciskDane, ekran, & przyciskCel );
         SDL_BlitSurface( kursor, NULL, ekran, & kursorDane );
         SDL_Flip( ekran );
 		
+
 		
 		while( SDL_PollEvent( & zdarzenie ) )
         {
@@ -156,10 +178,11 @@ SDL_Init( SDL_INIT_EVERYTHING );
         }
         if( keystate[ SDLK_d ] )
         {
-            if(x<700)
+            if(x<(LEVEL_WIDTH-LUDZIK_WIDTH-480))
 			{
 			x=x+5;
 			}
+
         }
 		if( keystate[ SDLK_a ] )
         {
@@ -177,7 +200,7 @@ SDL_Init( SDL_INIT_EVERYTHING );
         }
 		if( keystate[ SDLK_s ] )
         {
-            if(y<500)
+            if(y<(LEVEL_HEIGHT-LUDZIK_HEIGHT-150))
 			{
 			y=y+5;
 			}
@@ -196,7 +219,10 @@ SDL_Init( SDL_INIT_EVERYTHING );
 		{
 		xBottle=x+70;
 		yBottle=y+25;
+		if(x<LEVEL_WIDTH-680)
+		{
 		butelkaDestination.x = xBottle;
+		}
 		butelkaDestination.y = yBottle;
 		}
 		if(CzyStrzelono==0)
@@ -220,10 +246,15 @@ SDL_Init( SDL_INIT_EVERYTHING );
 		{
 			bulletx=x+70;
 			bullety=y+25;
+			if(x<LEVEL_WIDTH-680)
+		{
 			butelka1Destination.x = bulletx;
+			}
 			butelka1Destination.y = bullety;
 		}
 		if(CzyStrzelonoMyszka==0)
+		{
+		if(butelka1Destination.x<LEVEL_WIDTH && butelka1Destination.y<LEVEL_WIDTH)
 		{
 		delta1=(SDL_GetTicks()-startStrzaluMyszka)/5;
 		deltaX = kursorX - xBottle1; // delta to wektor w kierunku od punktu startowego do celu
@@ -236,10 +267,39 @@ SDL_Init( SDL_INIT_EVERYTHING );
         butelka1Destination.x = bulletx;
 		butelka1Destination.y = bullety;
 		}
+		else
+		{
+		CzyStrzelonoMyszka=1;
+		}
+		}
 		
+		 //Center the camera over the dot 
+		camera.x = ( x + LUDZIK_WIDTH  ) - SCREEN_WIDTH / 2; 
+		camera.y = ( y + LUDZIK_HEIGHT / 2 ) - SCREEN_HEIGHT / 2; 
+		//Keep the camera in bounds. 
+		if( camera.x < 0 ) 
+		{
+			camera.x = 0;
+		} 
+		if( camera.y < 0 ) 
+		{ 
+			camera.y = 0;
+		} 
+		if( camera.x > LEVEL_WIDTH - camera.w )
+		{ 
+			camera.x = LEVEL_WIDTH - camera.w;
+		} 
+		if( camera.y > LEVEL_HEIGHT - camera.h )
+		{ 
+			camera.y = LEVEL_HEIGHT - camera.h;
+		} 
 		
+		if(x<LEVEL_WIDTH-680)
+		{
 		LudekDestination.x = x;
+		}
 		LudekDestination.y = y;
+
         SDL_BlitSurface( ludek, NULL, ekran, & LudekDestination );
         SDL_BlitSurface( butelka, NULL, ekran, & butelkaDestination );
         SDL_BlitSurface( butelka1, NULL, ekran, & butelka1Destination );
